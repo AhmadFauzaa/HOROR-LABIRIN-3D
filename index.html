@@ -75,7 +75,7 @@
             padding: 1.5rem;
             border-radius: 4px;
             max-width: 90vw;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
         }
 
@@ -96,7 +96,7 @@
         .level-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-            gap: 8px;
+            gap: 10px;
             margin-top: 15px;
         }
 
@@ -111,31 +111,14 @@
             transition: 0.2s;
         }
 
-        /* Portrait Warning */
-        #landscape-warning {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-        }
-
-        @media screen and (orientation: portrait) {
-            #landscape-warning { display: flex; }
-        }
-
-        /* Joystick Adjustments */
+        /* Joystick for Portrait */
         #joystick-container {
             position: fixed;
-            bottom: 30px;
-            left: 30px;
-            width: 100px;
-            height: 100px;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 50%;
             display: none;
@@ -147,22 +130,26 @@
         #joystick-knob {
             position: absolute;
             top: 50%; left: 50%;
-            width: 40px; height: 40px;
+            width: 50px; height: 50px;
             background: var(--horror-red);
             border-radius: 50%;
             transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
         }
 
         #pause-trigger {
             position: fixed;
             top: 15px; right: 15px;
-            padding: 8px 15px;
-            background: rgba(139, 0, 0, 0.6);
+            padding: 10px 18px;
+            background: rgba(139, 0, 0, 0.7);
             border-radius: 4px;
             display: none;
             z-index: 50;
             pointer-events: auto;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            color: white;
+            font-weight: bold;
+            border: 1px solid rgba(255,0,0,0.3);
         }
 
         #crosshair {
@@ -172,62 +159,56 @@
             background: rgba(255, 0, 0, 0.8);
             border-radius: 50%;
             transform: translate(-50%, -50%);
+            box-shadow: 0 0 4px red;
+        }
+
+        #hud-timer {
+            font-variant-numeric: tabular-nums;
         }
     </style>
 </head>
 <body>
 
-    <!-- Peringatan Rotasi -->
-    <div id="landscape-warning">
-        <div class="nosifer-font text-red-700 text-3xl mb-4">GANTI POSISI!</div>
-        <p class="horror-font text-xl text-zinc-400">Putar HP Anda ke posisi mendatar (Landscape) untuk bermain.</p>
-        <div class="mt-8 animate-bounce">
-            <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-        </div>
-    </div>
-
     <div id="jumpscare-overlay">
         <img id="jumpscare-img" src="" class="w-full h-full object-contain">
-        <div class="absolute bottom-10 nosifer-font text-red-600 text-3xl md:text-5xl tracking-widest text-center px-4">KAU TIDAK BISA LARI!</div>
+        <div class="absolute bottom-20 nosifer-font text-red-600 text-3xl md:text-5xl tracking-widest text-center px-4">KAU TIDAK BISA LARI!</div>
     </div>
 
     <!-- Mobile Controls -->
     <div id="joystick-container">
         <div id="joystick-knob"></div>
     </div>
-    <button id="pause-trigger" class="horror-font text-white" onclick="pauseGame()">MENU</button>
+    <button id="pause-trigger" class="horror-font" onclick="pauseGame()">MENU</button>
 
     <div id="ui-layer">
         <!-- Main Menu -->
-        <div id="menu-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black pointer-events-auto p-4">
+        <div id="menu-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
             <h1 class="nosifer-font text-5xl md:text-8xl text-red-800 mb-2 text-center drop-shadow-2xl">LABIRIN<br>TERKUTUK</h1>
-            <p class="horror-font text-xl md:text-2xl text-red-500 mb-8 animate-pulse text-center">30 Bab Kegelapan</p>
+            <p class="horror-font text-xl md:text-2xl text-red-500 mb-12 animate-pulse text-center uppercase tracking-widest">30 Bab Kegelapan</p>
             
-            <div class="flex flex-col gap-3 w-full max-w-xs">
-                <button onclick="startGameSequence()" class="btn-horror py-3 rounded text-lg">Mulai Game</button>
-                <button onclick="showDeviceSettings()" class="btn-horror py-2 rounded bg-zinc-800 text-sm border border-zinc-700">Pilih Perangkat</button>
-                <button onclick="showInstructions()" class="btn-horror py-2 rounded bg-zinc-900 text-sm border border-zinc-700">Bantuan</button>
+            <div class="flex flex-col gap-4 w-full max-w-xs">
+                <button onclick="startGameSequence()" class="btn-horror py-4 rounded text-xl">Mulai Game</button>
+                <button onclick="showDeviceSettings()" class="btn-horror py-3 rounded bg-zinc-800 text-sm border border-zinc-700">Opsi Perangkat</button>
+                <button onclick="showInstructions()" class="btn-horror py-3 rounded bg-zinc-900 text-sm border border-zinc-700">Bantuan</button>
             </div>
-            <p id="device-hint" class="mt-6 text-zinc-600 text-[10px] uppercase tracking-widest text-center">Deteksi: Desktop Mode</p>
+            <p id="device-hint" class="mt-10 text-zinc-600 text-[10px] uppercase tracking-widest text-center">Mode: Potret diutamakan</p>
         </div>
 
         <!-- Device Settings -->
-        <div id="device-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-4">
+        <div id="device-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
             <div class="ui-panel w-full max-w-sm text-center">
-                <h2 class="horror-font text-3xl text-red-700 mb-6">Pilih Perangkat</h2>
-                <div class="flex flex-col gap-3">
-                    <button onclick="setDevice('PC')" class="p-3 bg-zinc-900 border border-zinc-700 hover:border-red-600 rounded text-left flex items-center justify-between text-sm">
-                        <span>Desktop (Keyboard)</span>
+                <h2 class="horror-font text-3xl text-red-700 mb-8">Pilih Perangkat</h2>
+                <div class="flex flex-col gap-4">
+                    <button onclick="setDevice('PC')" class="p-4 bg-zinc-900 border border-zinc-700 hover:border-red-600 rounded text-left flex items-center justify-between text-base">
+                        <span>Desktop (WASD + Mouse)</span>
                         <span id="check-pc" class="text-red-600">✔</span>
                     </button>
-                    <button onclick="setDevice('MOBILE')" class="p-3 bg-zinc-900 border border-zinc-700 hover:border-red-600 rounded text-left flex items-center justify-between text-sm">
-                        <span>HP (Joystick + Sentuh)</span>
+                    <button onclick="setDevice('MOBILE')" class="p-4 bg-zinc-900 border border-zinc-700 hover:border-red-600 rounded text-left flex items-center justify-between text-base">
+                        <span>Handphone (Sentuh)</span>
                         <span id="check-mobile" class="text-red-600 hidden">✔</span>
                     </button>
                 </div>
-                <button onclick="showMenu()" class="mt-8 text-zinc-500 uppercase text-[10px] hover:text-white">Kembali</button>
+                <button onclick="showMenu()" class="mt-10 text-zinc-500 uppercase text-xs hover:text-white">Kembali</button>
             </div>
         </div>
 
@@ -238,14 +219,14 @@
                     <h2 class="horror-font text-4xl text-red-700">Pilih Bab</h2>
                     <button onclick="showMenu()" class="text-zinc-500 hover:text-white underline uppercase text-xs">Kembali</button>
                 </div>
-                <div id="chapter-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 overflow-y-auto max-h-[60vh] p-2"></div>
+                <div id="chapter-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 overflow-y-auto max-h-[65vh] p-2"></div>
             </div>
         </div>
 
         <!-- Level Selection -->
         <div id="level-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-4">
             <div class="ui-panel w-full max-w-3xl">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-6">
                     <h2 id="chapter-display-title" class="horror-font text-3xl text-red-700">Chapter X</h2>
                     <button onclick="showChapters()" class="text-zinc-500 hover:text-white underline uppercase text-xs">Ganti Bab</button>
                 </div>
@@ -255,22 +236,22 @@
 
         <!-- In-Game HUD -->
         <div id="game-hud" class="absolute top-0 left-0 p-4 w-full flex justify-between items-start hidden">
-            <div class="bg-black/70 p-2 border-l-4 border-red-800 backdrop-blur-sm">
-                <div id="hud-info" class="horror-font text-lg text-red-600">BAB 1 - LV 1</div>
-                <div class="text-[8px] text-zinc-400 tracking-widest uppercase">Misi: Temukan Gerbang</div>
+            <div class="bg-black/80 p-3 border-l-4 border-red-800 backdrop-blur-md">
+                <div id="hud-info" class="horror-font text-xl text-red-600">BAB 1 - LV 1</div>
+                <div class="text-[9px] text-zinc-400 tracking-widest uppercase">Misi: Temukan Gerbang</div>
             </div>
-            <div id="hud-timer" class="horror-font text-xl text-zinc-400">00:00</div>
+            <div id="hud-timer" class="horror-font text-2xl text-zinc-400">00:00</div>
         </div>
         <div id="crosshair" class="hidden"></div>
 
         <!-- Pause Menu -->
         <div id="pause-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black/80 pointer-events-auto">
             <div class="ui-panel text-center min-w-[280px]">
-                <h2 class="nosifer-font text-3xl text-red-800 mb-8">BERHENTI</h2>
-                <div class="flex flex-col gap-4">
-                    <button onclick="resumeGame()" class="btn-horror py-2 rounded">Lanjut</button>
-                    <button onclick="restartLevel()" class="btn-horror py-2 rounded bg-zinc-800">Ulangi</button>
-                    <button onclick="showMenu()" class="btn-horror py-2 rounded bg-zinc-900 border border-zinc-700">Ke Menu</button>
+                <h2 class="nosifer-font text-3xl text-red-800 mb-10">BERHENTI</h2>
+                <div class="flex flex-col gap-6">
+                    <button onclick="resumeGame()" class="btn-horror py-3 rounded text-lg">Lanjut</button>
+                    <button onclick="restartLevel()" class="btn-horror py-3 rounded bg-zinc-800 border border-zinc-700">Ulangi</button>
+                    <button onclick="showMenu()" class="btn-horror py-3 rounded bg-zinc-900 border border-zinc-700">Menu Utama</button>
                 </div>
             </div>
         </div>
@@ -300,7 +281,6 @@
         let mazeSize = { w: 0, h: 0 };
         let levelTimer = 0;
         let timerInt;
-        let isMouseDown = false;
         let yaw = 0, pitch = 0;
         let moveState = { forward: false, backward: false, left: false, right: false };
         
@@ -341,22 +321,23 @@
         }
 
         function playScream() {
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 1.5);
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+            osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 1.2);
+            gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
         }
 
         function setDevice(type) {
             deviceType = type;
             document.getElementById('check-pc').classList.toggle('hidden', type !== 'PC');
             document.getElementById('check-mobile').classList.toggle('hidden', type !== 'MOBILE');
-            document.getElementById('device-hint').innerText = `Deteksi: ${type === 'PC' ? 'Desktop Mode' : 'HP Mode'}`;
+            document.getElementById('device-hint').innerText = `Mode Aktif: ${type === 'PC' ? 'Desktop' : 'Handphone'}`;
         }
 
         function showDeviceSettings() {
@@ -376,23 +357,19 @@
         }
 
         function startGameSequence() {
-            // Request Fullscreen on Mobile
-            if(deviceType === 'MOBILE' && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
+            initAudio();
             showChapters();
         }
 
         function showChapters() {
-            initAudio();
             document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
             document.getElementById('chapter-screen').classList.remove('hidden');
             const list = document.getElementById('chapter-list');
             list.innerHTML = '';
             for(let i=1; i<=TOTAL_CHAPTERS; i++) {
                 const item = document.createElement('div');
-                item.className = "p-4 bg-zinc-900 border border-zinc-800 hover:border-red-700 cursor-pointer transition flex flex-col items-center justify-center";
-                item.innerHTML = `<span class="text-[8px] text-zinc-500 uppercase">Bab</span><span class="horror-font text-2xl text-red-600">${i}</span>`;
+                item.className = "p-5 bg-zinc-900 border border-zinc-800 hover:border-red-700 cursor-pointer transition flex flex-col items-center justify-center rounded";
+                item.innerHTML = `<span class="text-[9px] text-zinc-500 uppercase">Bab</span><span class="horror-font text-3xl text-red-600">${i}</span>`;
                 item.onclick = () => selectChapter(i);
                 list.appendChild(item);
             }
@@ -407,7 +384,7 @@
             grid.innerHTML = '';
             for(let i=1; i<=LEVELS_PER_CHAPTER; i++) {
                 const div = document.createElement('div');
-                div.className = "level-card horror-font text-xl text-zinc-400";
+                div.className = "level-card horror-font text-2xl text-zinc-400 rounded";
                 div.innerText = i;
                 div.onclick = () => initLevel(i);
                 grid.appendChild(div);
@@ -415,7 +392,7 @@
         }
 
         function showInstructions() {
-            alert("INSTRUKSI:\n- Gunakan HP dalam posisi Landscape (Mendatar).\n- HP: Analog kiri untuk jalan, geser layar untuk lihat.\n- PC: WASD untuk jalan, mouse untuk lihat.\n- Temukan Gerbang Cahaya untuk lanjut.");
+            alert("BANTUAN:\n- Geser layar atau mouse untuk melihat sekeliling.\n- PC: Gunakan WASD untuk bergerak.\n- HP: Gunakan Analog di bawah layar untuk bergerak.\n- Temukan Gerbang Cahaya untuk menang.\n- Jumpscare muncul jika terkena monster.");
         }
 
         function init3D() {
@@ -427,18 +404,18 @@
             
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             if(!document.querySelector('canvas')) {
                 document.body.appendChild(renderer.domElement);
             } else {
                 renderer.domElement.style.display = 'block';
             }
 
-            flashlight = new THREE.SpotLight(0xffffff, 4, 30, Math.PI / 5, 0.4, 1);
+            flashlight = new THREE.SpotLight(0xffffff, 5, 35, Math.PI / 5, 0.5, 1);
             scene.add(flashlight);
             scene.add(flashlight.target);
 
-            ambientLight = new THREE.AmbientLight(0x220000, 0.1);
+            ambientLight = new THREE.AmbientLight(0x221111, 0.1);
             scene.add(ambientLight);
 
             clock = new THREE.Clock();
@@ -480,6 +457,8 @@
             if(deviceType === 'MOBILE') {
                 document.getElementById('joystick-container').style.display = 'block';
                 document.getElementById('pause-trigger').style.display = 'block';
+            } else {
+                document.getElementById('pause-trigger').style.display = 'none';
             }
 
             if(!scene) init3D();
@@ -495,16 +474,22 @@
             mazeSize = { w: size % 2 === 0 ? size + 1 : size, h: size % 2 === 0 ? size + 1 : size };
             mazeData = generateMazeData(mazeSize.w, mazeSize.h);
 
-            const wallGeo = new THREE.BoxGeometry(1, 2.8, 1);
+            const wallGeo = new THREE.BoxGeometry(1, 3, 1);
             const wallMat = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
             const floorGeo = new THREE.PlaneGeometry(mazeSize.w * 2, mazeSize.h * 2);
             const floorMat = new THREE.MeshPhongMaterial({ color: 0x050505 });
             
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
-            floor.position.set(mazeSize.w/2, -1.4, mazeSize.h/2);
+            floor.position.set(mazeSize.w/2, -1.5, mazeSize.h/2);
             scene.add(floor);
             walls.push(floor);
+
+            const ceiling = floor.clone();
+            ceiling.position.y = 1.5;
+            ceiling.rotation.x = Math.PI/2;
+            scene.add(ceiling);
+            walls.push(ceiling);
 
             for(let y=0; y<mazeSize.h; y++) {
                 for(let x=0; x<mazeSize.w; x++) {
@@ -523,7 +508,7 @@
             const goalTex = new THREE.TextureLoader().load(ASSETS.goal);
             const goalMat = new THREE.SpriteMaterial({ map: goalTex, transparent: true });
             goalMesh = new THREE.Sprite(goalMat);
-            goalMesh.scale.set(1.1, 1.1, 1);
+            goalMesh.scale.set(1.2, 1.2, 1);
             goalMesh.position.set(mazeSize.w - 2, 0, mazeSize.h - 2);
             scene.add(goalMesh);
 
@@ -538,6 +523,7 @@
                 } while (mazeData[my][mx] === 1 || (mx < 3 && my < 3));
                 const s = new THREE.Sprite(monsterMat);
                 s.position.set(mx, -0.2, my);
+                s.scale.set(0.9, 0.9, 1);
                 scene.add(s);
                 monsterSprites.push(s);
             }
@@ -568,13 +554,13 @@
             const overlay = document.getElementById('jumpscare-overlay');
             document.getElementById('jumpscare-img').src = ASSETS.monster;
             overlay.classList.add('jumpscare-active');
-            setTimeout(() => overlay.classList.remove('jumpscare-active'), 1100);
+            setTimeout(() => overlay.classList.remove('jumpscare-active'), 1200);
         }
 
         function setupAudioLoops() {
             clearInterval(heartbeatInt); clearInterval(footstepInt);
-            heartbeatInt = setInterval(playHeartbeat, 1300);
-            footstepInt = setInterval(playFootstep, 500);
+            heartbeatInt = setInterval(playHeartbeat, 1200);
+            footstepInt = setInterval(playFootstep, 450);
         }
 
         function setupInput() {
@@ -596,52 +582,68 @@
                 if(e.key === 'd' || e.key === 'ArrowRight') moveState.right = false;
             });
 
-            window.addEventListener('mousedown', () => isMouseDown = true);
-            window.addEventListener('mouseup', () => isMouseDown = false);
-            window.addEventListener('mousemove', e => {
-                if(isMouseDown && gameState === 'PLAYING' && deviceType === 'PC') {
-                    yaw -= e.movementX * 0.003;
-                    pitch -= e.movementY * 0.003;
-                    pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
-                }
-            });
+            // Universal Look Control
+            let isDragging = false;
+            let lastX = 0, lastY = 0;
 
-            // Mobile Joystick
+            const handleStart = (x, y) => {
+                isDragging = true;
+                lastX = x; lastY = y;
+            };
+
+            const handleMove = (x, y) => {
+                if (!isDragging || gameState !== 'PLAYING') return;
+                const dx = x - lastX;
+                const dy = y - lastY;
+                yaw -= dx * 0.005;
+                pitch -= dy * 0.005;
+                pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
+                lastX = x; lastY = y;
+            };
+
+            window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+            window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            // Mobile Joystick & Look
             joyContainer.addEventListener('touchstart', e => {
                 joystick.active = true;
                 const rect = joyContainer.getBoundingClientRect();
                 joystick.startX = rect.left + rect.width / 2;
                 joystick.startY = rect.top + rect.height / 2;
-                e.preventDefault();
+                e.stopPropagation();
+            }, {passive: false});
+
+            window.addEventListener('touchstart', e => {
+                if (e.target !== joyContainer && e.target !== joyKnob) {
+                    handleStart(e.touches[0].clientX, e.touches[0].clientY);
+                }
             }, {passive: false});
 
             window.addEventListener('touchmove', e => {
                 if(gameState !== 'PLAYING') return;
                 const touch = e.touches[0];
+                
                 if (joystick.active && (e.target === joyContainer || e.target === joyKnob)) {
                     let dx = touch.clientX - joystick.startX;
                     let dy = touch.clientY - joystick.startY;
-                    const max = 40;
+                    const max = 50;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if(dist > max) { dx *= max/dist; dy *= max/dist; }
                     joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
                     moveState.forward = dy < -15; moveState.backward = dy > 15;
                     moveState.left = dx < -15; moveState.right = dx > 15;
-                } else if(deviceType === 'MOBILE') {
-                    const moveX = touch.clientX - (joystick.lastX || touch.clientX);
-                    const moveY = touch.clientY - (joystick.lastY || touch.clientY);
-                    yaw -= moveX * 0.006;
-                    pitch -= moveY * 0.006;
-                    pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
+                    e.preventDefault();
+                } else {
+                    handleMove(touch.clientX, touch.clientY);
                 }
-                joystick.lastX = touch.clientX; joystick.lastY = touch.clientY;
             }, {passive: false});
 
             window.addEventListener('touchend', () => {
+                isDragging = false;
                 joystick.active = false;
                 joyKnob.style.transform = 'translate(-50%, -50%)';
                 moveState.forward = moveState.backward = moveState.left = moveState.right = false;
-                joystick.lastX = joystick.lastY = null;
             });
         }
 
@@ -672,7 +674,7 @@
             requestAnimationFrame(animate);
 
             const dt = clock.getDelta();
-            const speed = 2.6;
+            const speed = 2.7;
 
             camera.rotation.order = "YXZ";
             camera.rotation.y = yaw;
