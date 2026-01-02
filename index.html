@@ -120,12 +120,8 @@
     <div id="joystick-base"><div id="joystick-stick"></div></div>
     
     <div id="ui-layer">
-        <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black pointer-events-auto">
-            <div class="nosifer-font text-red-700 text-4xl mb-4 animate-pulse">MEMBANGKITKAN...</div>
-            <div class="text-zinc-600 tracking-widest text-xs uppercase">Menyiapkan Ruangan Terkutuk</div>
-        </div>
-
-        <div id="menu-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
+        <!-- Langsung ke Menu Screen -->
+        <div id="menu-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
             <div class="mb-12 text-center">
                 <h1 class="nosifer-font text-5xl md:text-8xl text-red-800 mb-2 drop-shadow-[0_0_20px_rgba(255,0,0,0.6)]">LABIRIN<br>TERKUTUK</h1>
                 <p class="horror-font text-2xl text-red-600 tracking-[0.4em] uppercase opacity-70">Ruangan Kegelapan</p>
@@ -137,7 +133,7 @@
             </div>
 
             <div class="absolute bottom-8 text-center opacity-40">
-                <code id="user-id-display" class="text-xs text-red-900">Memuat ID...</code>
+                <code id="user-id-display" class="text-xs text-red-900">Menghubungkan...</code>
             </div>
         </div>
 
@@ -185,7 +181,7 @@
         let walls = [], monsters = [], goal, doors = [];
         let userProgress = { unlockedChapters: 1 };
         let curChapter = 1;
-        let gameState = 'LOADING';
+        let gameState = 'MENU';
         let maze = { data: [], width: 0, height: 0 };
         let moveState = { f: false, b: false, l: false, r: false };
         let yaw = 0, pitch = 0, timer = 0, timerInterval;
@@ -205,12 +201,10 @@
             if (type === 'wall') {
                 ctx.fillStyle = '#111';
                 ctx.fillRect(0, 0, 1024, 1024);
-                // Noise & Dirt
                 for(let i=0; i<5000; i++) {
                     ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.5})`;
                     ctx.fillRect(Math.random()*1024, Math.random()*1024, Math.random()*4, Math.random()*4);
                 }
-                // Cracks
                 ctx.strokeStyle = '#000';
                 for(let i=0; i<15; i++) {
                     ctx.beginPath();
@@ -219,7 +213,6 @@
                     ctx.lineWidth = Math.random() * 2;
                     ctx.stroke();
                 }
-                // Blood stains
                 for(let i=0; i<3; i++) {
                     ctx.fillStyle = `rgba(50,0,0,${Math.random()*0.4})`;
                     ctx.beginPath();
@@ -249,7 +242,6 @@
             if (audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Heartbeat
             heartbeatNode = audioCtx.createGain();
             heartbeatNode.connect(audioCtx.destination);
             setInterval(() => {
@@ -264,13 +256,11 @@
                 osc.start(); osc.stop(audioCtx.currentTime + 0.3);
             }, 1000);
 
-            // Breathing
             setInterval(() => {
                 if (gameState !== 'PLAYING') return;
                 playBreathing();
             }, 4000);
 
-            // Random Screams
             setInterval(() => {
                 if (gameState !== 'PLAYING' || Math.random() > 0.1) return;
                 playScream(200 + Math.random()*800);
@@ -308,7 +298,10 @@
 
         // --- APP INIT ---
         async function initApp() {
-            if (!firebaseConfig) return;
+            if (!firebaseConfig) {
+                console.warn("Firebase config not found, running in offline mode.");
+                return;
+            }
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
@@ -323,7 +316,6 @@
                     userId = user.uid;
                     document.getElementById('user-id-display').innerText = `JIWA: ${userId}`;
                     await loadData();
-                    showMenu();
                 }
             });
         }
@@ -336,6 +328,7 @@
         }
 
         async function saveData() {
+            if(!userId) return;
             const docRef = doc(db, 'artifacts', appId, 'users', userId, 'progress', 'current');
             await setDoc(docRef, userProgress);
         }
@@ -378,16 +371,13 @@
             }
             carve(1, 1);
             
-            // Add Rooms & Doors
             let roomCount = 0;
             while(roomCount < 12) {
                 let rx = Math.floor(Math.random()*(w-4))+1;
                 let ry = Math.floor(Math.random()*(h-4))+1;
-                // Clear 3x3 area
                 for(let i=0; i<3; i++) {
                     for(let j=0; j<3; j++) grid[ry+i][rx+j] = 0;
                 }
-                // Mark Door location (simplified: door is part of maze logic)
                 grid[ry][rx] = 2; 
                 roomCount++;
             }
@@ -426,7 +416,6 @@
                         m.position.set(x, 0.5, y);
                         scene.add(m); walls.push(m);
                     } else if(maze.data[y][x] === 2) {
-                        // Doors
                         const d = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3, 0.2), doorMat);
                         d.position.set(x, 0, y);
                         scene.add(d); doors.push(d);
@@ -434,7 +423,6 @@
                 }
             }
 
-            // Floor & Ceiling HD
             const planeGeo = new THREE.PlaneGeometry(maze.width*1.5, maze.height*1.5);
             const floor = new THREE.Mesh(planeGeo, new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1 }));
             floor.rotation.x = -Math.PI/2;
@@ -444,12 +432,10 @@
             camera.position.set(1, 0, 1);
             yaw = 0; pitch = 0;
 
-            // Exit Goal
             goal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.5 }));
             goal.position.set(maze.width - 2, 0, maze.height - 2);
             scene.add(goal);
 
-            // Monsters
             const count = 3 + Math.floor(chap/2);
             for(let i=0; i<count; i++) {
                 let mx, my;
@@ -609,7 +595,6 @@
                 pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
             });
 
-            // Mobile Joystick
             const joyBase = document.getElementById('joystick-base');
             const joyStick = document.getElementById('joystick-stick');
             let joyActive = false;
@@ -628,7 +613,6 @@
             }, {passive:false});
             window.addEventListener('touchend', () => { joyActive = false; joyStick.style.transform = `translate(-50%, -50%)`; moveState.f = moveState.b = moveState.l = moveState.r = false; });
             
-            // Touch Look
             let lastX = 0, lastY = 0;
             window.addEventListener('touchstart', e => { if(e.target === joyBase || e.target === joyStick) return; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; });
             window.addEventListener('touchmove', e => { if(joyActive || gameState !== 'PLAYING') return; const tx = e.touches[0].clientX, ty = e.touches[0].clientY; yaw -= (tx - lastX) * 0.006; pitch -= (ty - lastY) * 0.006; pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch)); lastX = tx; lastY = ty; });
@@ -640,4 +624,3 @@
     </script>
 </body>
 </html>
-
