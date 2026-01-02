@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Labirin Terkutuk 3D: 30 Bab Ketakutan</title>
+    <title>Labirin Terkutuk 3D: Edisi Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Roboto:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Special+Elite&display=swap');
 
         :root {
-            --horror-red: #8b0000;
-            --horror-dark: #050505;
+            --horror-red: #9a0000;
+            --horror-black: #020202;
+            --blood-dark: #4a0000;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--horror-dark);
-            color: white;
-            font-family: 'Roboto', sans-serif;
+            margin: 0; padding: 0;
+            background-color: var(--horror-black);
+            color: #ddd;
+            font-family: 'Special Elite', cursive;
             overflow: hidden;
             user-select: none;
             touch-action: none;
@@ -28,406 +28,339 @@
         .horror-font { font-family: 'Creepster', cursive; }
         .nosifer-font { font-family: 'Nosifer', cursive; }
 
-        canvas { display: block; }
+        canvas { display: block; filter: contrast(1.1) brightness(0.9); }
 
         #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
         }
 
         .pointer-events-auto { pointer-events: auto; }
 
+        .blood-vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 30%, rgba(139, 0, 0, 0.3) 100%);
+            pointer-events: none; z-index: 5;
+        }
+
         #jumpscare-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: black;
-            display: none;
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; display: none; z-index: 1000;
+            justify-content: center; align-items: center;
         }
 
         .jumpscare-active {
             display: flex !important;
-            animation: flash 0.1s infinite, shake 0.2s infinite;
+            animation: flash 0.05s infinite, shake 0.1s infinite;
         }
 
         @keyframes flash {
-            0%, 100% { background: #000; opacity: 1; }
-            50% { background: #600; opacity: 0.9; }
+            0%, 100% { background: #000; }
+            50% { background: #400; }
         }
 
         @keyframes shake {
-            0% { transform: translate(0,0); }
-            25% { transform: translate(20px, 20px); }
-            50% { transform: translate(-20px, -20px); }
-            75% { transform: translate(20px, -20px); }
-            100% { transform: translate(-20px, 20px); }
+            0% { transform: translate(0,0) scale(1); }
+            25% { transform: translate(20px, 20px) scale(1.1); }
+            50% { transform: translate(-20px, -20px) scale(0.9); }
+            100% { transform: translate(0,0) scale(1); }
         }
 
         .ui-panel {
             background: rgba(5, 5, 5, 0.95);
-            border: 2px solid var(--horror-red);
-            box-shadow: 0 0 30px var(--horror-red);
-            padding: 1.5rem;
-            border-radius: 4px;
-            max-width: 90vw;
-            max-height: 85vh;
-            overflow-y: auto;
+            border: 1px solid var(--blood-dark);
+            box-shadow: 0 0 30px rgba(154, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
         }
 
         .btn-horror {
-            background: var(--horror-red);
-            transition: all 0.3s;
+            background: linear-gradient(to bottom, #8b0000, #3a0000);
+            border: 1px solid #ff000044;
+            transition: 0.3s;
             text-transform: uppercase;
-            font-weight: bold;
             letter-spacing: 2px;
         }
 
-        .btn-horror:hover {
-            background: #ff0000;
-            box-shadow: 0 0 15px #ff0000;
-            transform: scale(1.02);
+        .btn-horror:hover:not(:disabled) {
+            filter: brightness(1.4);
+            box-shadow: 0 0 20px #ff000088;
         }
 
-        .level-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .level-card {
-            background: #111;
-            border: 1px solid #333;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        /* Joystick for Portrait */
-        #joystick-container {
-            position: fixed;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            display: none;
-            z-index: 50;
-            border: 1px solid rgba(139, 0, 0, 0.3);
+        #joystick-base {
+            position: fixed; bottom: 50px; left: 50px;
+            width: 140px; height: 140px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 0, 0, 0.15);
+            border-radius: 50%; display: none; z-index: 50;
             pointer-events: auto;
         }
 
-        #joystick-knob {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 50px; height: 50px;
-            background: var(--horror-red);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
-        }
-
-        #pause-trigger {
-            position: fixed;
-            top: 15px; right: 15px;
-            padding: 10px 18px;
-            background: rgba(139, 0, 0, 0.7);
-            border-radius: 4px;
-            display: none;
-            z-index: 50;
-            pointer-events: auto;
-            font-size: 0.9rem;
-            color: white;
-            font-weight: bold;
-            border: 1px solid rgba(255,0,0,0.3);
-        }
-
-        #crosshair {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 4px; height: 4px;
-            background: rgba(255, 0, 0, 0.8);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 4px red;
-        }
-
-        #hud-timer {
-            font-variant-numeric: tabular-nums;
+        #joystick-stick {
+            position: absolute; top: 50%; left: 50%;
+            width: 60px; height: 60px;
+            background: radial-gradient(circle, #ff0000, #5a0000);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
         }
     </style>
 </head>
 <body>
 
+    <div class="blood-vignette"></div>
+
     <div id="jumpscare-overlay">
-        <img id="jumpscare-img" src="" class="w-full h-full object-contain">
-        <div class="absolute bottom-20 nosifer-font text-red-600 text-3xl md:text-5xl tracking-widest text-center px-4">KAU TIDAK BISA LARI!</div>
+        <div id="jumpscare-content" class="relative w-full h-full flex items-center justify-center">
+            <div class="text-[250px] select-none">💀</div>
+            <div class="absolute bottom-20 nosifer-font text-red-600 text-5xl text-center px-4 animate-pulse">
+                MATILAH KAU!
+            </div>
+        </div>
     </div>
 
-    <!-- Mobile Controls -->
-    <div id="joystick-container">
-        <div id="joystick-knob"></div>
-    </div>
-    <button id="pause-trigger" class="horror-font" onclick="pauseGame()">MENU</button>
-
+    <div id="joystick-base"><div id="joystick-stick"></div></div>
+    
     <div id="ui-layer">
-        <!-- Main Menu -->
-        <div id="menu-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
-            <h1 class="nosifer-font text-5xl md:text-8xl text-red-800 mb-2 text-center drop-shadow-2xl">LABIRIN<br>TERKUTUK</h1>
-            <p class="horror-font text-xl md:text-2xl text-red-500 mb-12 animate-pulse text-center uppercase tracking-widest">30 Bab Kegelapan</p>
+        <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black pointer-events-auto">
+            <div class="nosifer-font text-red-700 text-4xl mb-4 animate-pulse">MEMBANGKITKAN...</div>
+            <div class="text-zinc-600 tracking-widest text-xs uppercase">Menyiapkan Ruangan Terkutuk</div>
+        </div>
+
+        <div id="menu-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
+            <div class="mb-12 text-center">
+                <h1 class="nosifer-font text-5xl md:text-8xl text-red-800 mb-2 drop-shadow-[0_0_20px_rgba(255,0,0,0.6)]">LABIRIN<br>TERKUTUK</h1>
+                <p class="horror-font text-2xl text-red-600 tracking-[0.4em] uppercase opacity-70">Ruangan Kegelapan</p>
+            </div>
             
             <div class="flex flex-col gap-4 w-full max-w-xs">
-                <button onclick="startGameSequence()" class="btn-horror py-4 rounded text-xl">Mulai Game</button>
-                <button onclick="showDeviceSettings()" class="btn-horror py-3 rounded bg-zinc-800 text-sm border border-zinc-700">Opsi Perangkat</button>
-                <button onclick="showInstructions()" class="btn-horror py-3 rounded bg-zinc-900 text-sm border border-zinc-700">Bantuan</button>
+                <button onclick="showChapters()" class="btn-horror py-4 rounded font-bold text-xl">Masuk</button>
+                <button onclick="toggleFullscreen()" class="bg-zinc-900 border border-zinc-800 p-2 text-[10px] uppercase hover:text-white">Fullscreen</button>
             </div>
-            <p id="device-hint" class="mt-10 text-zinc-600 text-[10px] uppercase tracking-widest text-center">Mode: Potret diutamakan</p>
-        </div>
 
-        <!-- Device Settings -->
-        <div id="device-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-6">
-            <div class="ui-panel w-full max-w-sm text-center">
-                <h2 class="horror-font text-3xl text-red-700 mb-8">Pilih Perangkat</h2>
-                <div class="flex flex-col gap-4">
-                    <button onclick="setDevice('PC')" class="p-4 bg-zinc-900 border border-zinc-700 hover:border-red-600 rounded text-left flex items-center justify-between text-base">
-                        <span>Desktop (WASD + Mouse)</span>
-                        <span id="check-pc" class="text-red-600">✔</span>
-                    </button>
-                    <button onclick="setDevice('MOBILE')" class="p-4 bg-zinc-900 border border-zinc-700 hover:border-red-600 rounded text-left flex items-center justify-between text-base">
-                        <span>Handphone (Sentuh)</span>
-                        <span id="check-mobile" class="text-red-600 hidden">✔</span>
-                    </button>
-                </div>
-                <button onclick="showMenu()" class="mt-10 text-zinc-500 uppercase text-xs hover:text-white">Kembali</button>
+            <div class="absolute bottom-8 text-center opacity-40">
+                <code id="user-id-display" class="text-xs text-red-900">Memuat ID...</code>
             </div>
         </div>
 
-        <!-- Chapter Selection -->
         <div id="chapter-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-4">
-            <div class="ui-panel w-full max-w-4xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="horror-font text-4xl text-red-700">Pilih Bab</h2>
-                    <button onclick="showMenu()" class="text-zinc-500 hover:text-white underline uppercase text-xs">Kembali</button>
+            <div class="ui-panel w-full max-w-5xl p-8 rounded shadow-2xl overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-6 border-b border-red-950 pb-4">
+                    <h2 class="horror-font text-5xl text-red-700">Level Terkutuk</h2>
+                    <button onclick="showMenu()" class="text-zinc-500 hover:text-red-500 text-xs uppercase">Kembali</button>
                 </div>
-                <div id="chapter-list" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 overflow-y-auto max-h-[65vh] p-2"></div>
+                <div id="chapter-list" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 gap-4 overflow-y-auto pr-2 max-h-[60vh]"></div>
             </div>
         </div>
 
-        <!-- Level Selection -->
-        <div id="level-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black pointer-events-auto p-4">
-            <div class="ui-panel w-full max-w-3xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 id="chapter-display-title" class="horror-font text-3xl text-red-700">Chapter X</h2>
-                    <button onclick="showChapters()" class="text-zinc-500 hover:text-white underline uppercase text-xs">Ganti Bab</button>
-                </div>
-                <div id="level-grid" class="level-grid"></div>
+        <div id="game-hud" class="absolute top-0 left-0 p-6 w-full flex justify-between items-start hidden">
+            <div class="bg-black/80 border-l-4 border-red-700 p-3 backdrop-blur-md">
+                <div id="hud-lvl" class="horror-font text-red-600 text-2xl">BAB 1</div>
+                <div class="text-[10px] text-zinc-500 uppercase tracking-widest">Misi: Keluar Hidup-hidup</div>
+            </div>
+            <div class="flex flex-col items-end gap-3">
+                <div id="hud-timer" class="horror-font text-3xl text-zinc-400 bg-black/60 px-4 py-2 border border-zinc-900">00:00</div>
+                <button onclick="pauseGame()" class="btn-horror px-4 py-2 text-xs pointer-events-auto">MENU</button>
             </div>
         </div>
 
-        <!-- In-Game HUD -->
-        <div id="game-hud" class="absolute top-0 left-0 p-4 w-full flex justify-between items-start hidden">
-            <div class="bg-black/80 p-3 border-l-4 border-red-800 backdrop-blur-md">
-                <div id="hud-info" class="horror-font text-xl text-red-600">BAB 1 - LV 1</div>
-                <div class="text-[9px] text-zinc-400 tracking-widest uppercase">Misi: Temukan Gerbang</div>
-            </div>
-            <div id="hud-timer" class="horror-font text-2xl text-zinc-400">00:00</div>
-        </div>
-        <div id="crosshair" class="hidden"></div>
-
-        <!-- Pause Menu -->
-        <div id="pause-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black/80 pointer-events-auto">
-            <div class="ui-panel text-center min-w-[280px]">
-                <h2 class="nosifer-font text-3xl text-red-800 mb-10">BERHENTI</h2>
-                <div class="flex flex-col gap-6">
-                    <button onclick="resumeGame()" class="btn-horror py-3 rounded text-lg">Lanjut</button>
-                    <button onclick="restartLevel()" class="btn-horror py-3 rounded bg-zinc-800 border border-zinc-700">Ulangi</button>
-                    <button onclick="showMenu()" class="btn-horror py-3 rounded bg-zinc-900 border border-zinc-700">Menu Utama</button>
+        <div id="pause-screen" class="absolute inset-0 hidden flex flex-col items-center justify-center bg-black/95 pointer-events-auto">
+            <div class="ui-panel p-12 text-center min-w-[350px] border-double border-8">
+                <h2 class="nosifer-font text-4xl text-red-800 mb-10">TERHENTI</h2>
+                <div class="flex flex-col gap-5">
+                    <button onclick="resumeGame()" class="btn-horror py-4 rounded text-xl font-bold">Lanjutkan</button>
+                    <button onclick="restartLevel()" class="bg-zinc-900 border border-zinc-800 py-3 rounded text-zinc-500 hover:text-white uppercase text-xs">Ulangi</button>
+                    <button onclick="showMenu()" class="text-zinc-600 hover:text-red-500 text-[10px] mt-6 uppercase">Menu Utama</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        const ASSETS = {
-            player: "image_c4018a.png",
-            monster: "image_c401c5.png",
-            goal: "image_c40588.png"
-        };
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const TOTAL_CHAPTERS = 30;
-        const LEVELS_PER_CHAPTER = 20;
-
+        // --- GAME LOGIC ---
         let scene, camera, renderer, clock;
         let flashlight, ambientLight;
-        let walls = [];
-        let monsterSprites = [];
-        let goalMesh;
-
-        let gameState = 'MENU';
-        let deviceType = 'PC';
+        let walls = [], monsters = [], goal, doors = [];
+        let userProgress = { unlockedChapters: 1 };
         let curChapter = 1;
-        let curLevel = 1;
-        let mazeData = [];
-        let mazeSize = { w: 0, h: 0 };
-        let levelTimer = 0;
-        let timerInt;
-        let yaw = 0, pitch = 0;
-        let moveState = { forward: false, backward: false, left: false, right: false };
-        
-        let joystick = { active: false, startX: 0, startY: 0 };
-        const joyContainer = document.getElementById('joystick-container');
-        const joyKnob = document.getElementById('joystick-knob');
+        let gameState = 'LOADING';
+        let maze = { data: [], width: 0, height: 0 };
+        let moveState = { f: false, b: false, l: false, r: false };
+        let yaw = 0, pitch = 0, timer = 0, timerInterval;
+        let userId = null, db, auth;
+        let audioCtx, heartbeatNode, breathNode;
 
-        let audioCtx;
-        let heartbeatInt, footstepInt;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'labirin-pro-horror';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+        // --- HD TEXTURE GENERATION ---
+        function generateHDTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            if (type === 'wall') {
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 0, 1024, 1024);
+                // Noise & Dirt
+                for(let i=0; i<5000; i++) {
+                    ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.5})`;
+                    ctx.fillRect(Math.random()*1024, Math.random()*1024, Math.random()*4, Math.random()*4);
+                }
+                // Cracks
+                ctx.strokeStyle = '#000';
+                for(let i=0; i<15; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(Math.random()*1024, Math.random()*1024);
+                    ctx.lineTo(Math.random()*1024, Math.random()*1024);
+                    ctx.lineWidth = Math.random() * 2;
+                    ctx.stroke();
+                }
+                // Blood stains
+                for(let i=0; i<3; i++) {
+                    ctx.fillStyle = `rgba(50,0,0,${Math.random()*0.4})`;
+                    ctx.beginPath();
+                    ctx.arc(Math.random()*1024, Math.random()*1024, Math.random()*200, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (type === 'door') {
+                ctx.fillStyle = '#2a1a0a';
+                ctx.fillRect(0,0,1024,1024);
+                ctx.fillStyle = '#1a0a00';
+                for(let i=0; i<10; i++) ctx.fillRect(i*102, 0, 10, 1024);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 10;
+                ctx.strokeRect(50, 50, 924, 924);
+            }
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = 16;
+            return tex;
+        }
+
+        const wallTexture = generateHDTexture('wall');
+        const doorTexture = generateHDTexture('door');
+
+        // --- AUDIO ENGINE ---
         function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Heartbeat
+            heartbeatNode = audioCtx.createGain();
+            heartbeatNode.connect(audioCtx.destination);
+            setInterval(() => {
+                if (gameState !== 'PLAYING') return;
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(60, audioCtx.currentTime);
+                g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                osc.connect(g); g.connect(heartbeatNode);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }, 1000);
+
+            // Breathing
+            setInterval(() => {
+                if (gameState !== 'PLAYING') return;
+                playBreathing();
+            }, 4000);
+
+            // Random Screams
+            setInterval(() => {
+                if (gameState !== 'PLAYING' || Math.random() > 0.1) return;
+                playScream(200 + Math.random()*800);
+            }, 15000);
         }
 
-        function playHeartbeat() {
-            if (gameState !== 'PLAYING') return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(60, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        function playBreathing() {
+            const noise = audioCtx.createBufferSource();
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for(let i=0; i<buffer.length; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0, audioCtx.currentTime);
+            g.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.8);
+            g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.6);
+            noise.connect(filter); filter.connect(g); g.connect(audioCtx.destination);
+            noise.start();
         }
 
-        function playFootstep() {
-            if (gameState !== 'PLAYING') return;
-            if (!(moveState.forward || moveState.backward || moveState.left || moveState.right)) return;
+        function playScream(freq) {
             const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        }
-
-        function playScream() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            const g = audioCtx.createGain();
             osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(450, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 1.2);
-            gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 2);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 2);
         }
 
-        function setDevice(type) {
-            deviceType = type;
-            document.getElementById('check-pc').classList.toggle('hidden', type !== 'PC');
-            document.getElementById('check-mobile').classList.toggle('hidden', type !== 'MOBILE');
-            document.getElementById('device-hint').innerText = `Mode Aktif: ${type === 'PC' ? 'Desktop' : 'Handphone'}`;
+        // --- APP INIT ---
+        async function initApp() {
+            if (!firebaseConfig) return;
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            try {
+                if (initialToken) await signInWithCustomToken(auth, initialToken);
+                else await signInAnonymously(auth);
+            } catch (e) { console.error(e); }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    document.getElementById('user-id-display').innerText = `JIWA: ${userId}`;
+                    await loadData();
+                    showMenu();
+                }
+            });
         }
 
-        function showDeviceSettings() {
-            document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
-            document.getElementById('device-screen').classList.remove('hidden');
+        async function loadData() {
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'progress', 'current');
+            const snap = await getDoc(docRef);
+            if (snap.exists()) userProgress = snap.data();
+            else await saveData();
         }
 
-        function showMenu() {
-            gameState = 'MENU';
-            document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
-            document.getElementById('menu-screen').classList.remove('hidden');
-            document.getElementById('joystick-container').style.display = 'none';
-            document.getElementById('pause-trigger').style.display = 'none';
-            if(renderer) renderer.domElement.style.display = 'none';
-            clearInterval(heartbeatInt);
-            clearInterval(footstepInt);
-        }
-
-        function startGameSequence() {
-            initAudio();
-            showChapters();
-        }
-
-        function showChapters() {
-            document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
-            document.getElementById('chapter-screen').classList.remove('hidden');
-            const list = document.getElementById('chapter-list');
-            list.innerHTML = '';
-            for(let i=1; i<=TOTAL_CHAPTERS; i++) {
-                const item = document.createElement('div');
-                item.className = "p-5 bg-zinc-900 border border-zinc-800 hover:border-red-700 cursor-pointer transition flex flex-col items-center justify-center rounded";
-                item.innerHTML = `<span class="text-[9px] text-zinc-500 uppercase">Bab</span><span class="horror-font text-3xl text-red-600">${i}</span>`;
-                item.onclick = () => selectChapter(i);
-                list.appendChild(item);
-            }
-        }
-
-        function selectChapter(chap) {
-            curChapter = chap;
-            document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
-            document.getElementById('level-screen').classList.remove('hidden');
-            document.getElementById('chapter-display-title').innerText = `Bab ${chap}`;
-            const grid = document.getElementById('level-grid');
-            grid.innerHTML = '';
-            for(let i=1; i<=LEVELS_PER_CHAPTER; i++) {
-                const div = document.createElement('div');
-                div.className = "level-card horror-font text-2xl text-zinc-400 rounded";
-                div.innerText = i;
-                div.onclick = () => initLevel(i);
-                grid.appendChild(div);
-            }
-        }
-
-        function showInstructions() {
-            alert("BANTUAN:\n- Geser layar atau mouse untuk melihat sekeliling.\n- PC: Gunakan WASD untuk bergerak.\n- HP: Gunakan Analog di bawah layar untuk bergerak.\n- Temukan Gerbang Cahaya untuk menang.\n- Jumpscare muncul jika terkena monster.");
+        async function saveData() {
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'progress', 'current');
+            await setDoc(docRef, userProgress);
         }
 
         function init3D() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x000000);
-            scene.fog = new THREE.FogExp2(0x000000, 0.15);
+            scene.fog = new THREE.FogExp2(0x000000, 0.2);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            if(!document.querySelector('canvas')) {
-                document.body.appendChild(renderer.domElement);
-            } else {
-                renderer.domElement.style.display = 'block';
-            }
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
 
-            flashlight = new THREE.SpotLight(0xffffff, 5, 35, Math.PI / 5, 0.5, 1);
+            flashlight = new THREE.SpotLight(0xffffff, 10, 25, Math.PI/5, 0.5, 2);
             scene.add(flashlight);
             scene.add(flashlight.target);
 
-            ambientLight = new THREE.AmbientLight(0x221111, 0.1);
+            ambientLight = new THREE.AmbientLight(0x0a0000, 0.3);
             scene.add(ambientLight);
 
             clock = new THREE.Clock();
             window.addEventListener('resize', onResize);
             setupInput();
-        }
-
-        function onResize() {
-            if (!camera || !renderer) return;
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
         function generateMazeData(w, h) {
@@ -444,283 +377,266 @@
                 }
             }
             carve(1, 1);
+            
+            // Add Rooms & Doors
+            let roomCount = 0;
+            while(roomCount < 12) {
+                let rx = Math.floor(Math.random()*(w-4))+1;
+                let ry = Math.floor(Math.random()*(h-4))+1;
+                // Clear 3x3 area
+                for(let i=0; i<3; i++) {
+                    for(let j=0; j<3; j++) grid[ry+i][rx+j] = 0;
+                }
+                // Mark Door location (simplified: door is part of maze logic)
+                grid[ry][rx] = 2; 
+                roomCount++;
+            }
             return grid;
         }
 
-        function initLevel(lvl) {
-            curLevel = lvl;
+        function startLevel(chap) {
+            initAudio();
+            curChapter = chap;
             gameState = 'PLAYING';
             document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
             document.getElementById('game-hud').classList.remove('hidden');
-            document.getElementById('crosshair').classList.remove('hidden');
-            
-            if(deviceType === 'MOBILE') {
-                document.getElementById('joystick-container').style.display = 'block';
-                document.getElementById('pause-trigger').style.display = 'block';
-            } else {
-                document.getElementById('pause-trigger').style.display = 'none';
-            }
+            if('ontouchstart' in window) document.getElementById('joystick-base').style.display = 'block';
 
             if(!scene) init3D();
-            onResize();
-            renderer.domElement.style.display = 'block';
             
             walls.forEach(w => scene.remove(w));
-            monsterSprites.forEach(m => scene.remove(m));
-            if(goalMesh) scene.remove(goalMesh);
-            walls = []; monsterSprites = [];
+            monsters.forEach(m => scene.remove(m.mesh));
+            doors.forEach(d => scene.remove(d));
+            if(goal) scene.remove(goal);
+            walls = []; monsters = []; doors = [];
 
-            const size = 11 + Math.floor(curChapter * 0.5) + Math.floor(curLevel / 4);
-            mazeSize = { w: size % 2 === 0 ? size + 1 : size, h: size % 2 === 0 ? size + 1 : size };
-            mazeData = generateMazeData(mazeSize.w, mazeSize.h);
+            const size = 15 + (chap * 2);
+            maze.width = size % 2 === 0 ? size + 1 : size;
+            maze.height = maze.width;
+            maze.data = generateMazeData(maze.width, maze.height);
 
-            const wallGeo = new THREE.BoxGeometry(1, 3, 1);
-            const wallMat = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
-            const floorGeo = new THREE.PlaneGeometry(mazeSize.w * 2, mazeSize.h * 2);
-            const floorMat = new THREE.MeshPhongMaterial({ color: 0x050505 });
-            
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(mazeSize.w/2, -1.5, mazeSize.h/2);
-            scene.add(floor);
-            walls.push(floor);
+            const wallGeo = new THREE.BoxGeometry(1, 4, 1);
+            const wallMat = new THREE.MeshStandardMaterial({ map: wallTexture, roughness: 0.9 });
+            const doorMat = new THREE.MeshStandardMaterial({ map: doorTexture, color: 0x884444 });
 
-            const ceiling = floor.clone();
-            ceiling.position.y = 1.5;
-            ceiling.rotation.x = Math.PI/2;
-            scene.add(ceiling);
-            walls.push(ceiling);
-
-            for(let y=0; y<mazeSize.h; y++) {
-                for(let x=0; x<mazeSize.w; x++) {
-                    if(mazeData[y][x] === 1) {
+            for(let y=0; y<maze.height; y++) {
+                for(let x=0; x<maze.width; x++) {
+                    if(maze.data[y][x] === 1) {
                         const m = new THREE.Mesh(wallGeo, wallMat);
-                        m.position.set(x, 0, y);
-                        scene.add(m);
-                        walls.push(m);
+                        m.position.set(x, 0.5, y);
+                        scene.add(m); walls.push(m);
+                    } else if(maze.data[y][x] === 2) {
+                        // Doors
+                        const d = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3, 0.2), doorMat);
+                        d.position.set(x, 0, y);
+                        scene.add(d); doors.push(d);
                     }
                 }
             }
 
+            // Floor & Ceiling HD
+            const planeGeo = new THREE.PlaneGeometry(maze.width*1.5, maze.height*1.5);
+            const floor = new THREE.Mesh(planeGeo, new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1 }));
+            floor.rotation.x = -Math.PI/2;
+            floor.position.set(maze.width/2, -1.5, maze.height/2);
+            scene.add(floor); walls.push(floor);
+
             camera.position.set(1, 0, 1);
             yaw = 0; pitch = 0;
 
-            const goalTex = new THREE.TextureLoader().load(ASSETS.goal);
-            const goalMat = new THREE.SpriteMaterial({ map: goalTex, transparent: true });
-            goalMesh = new THREE.Sprite(goalMat);
-            goalMesh.scale.set(1.2, 1.2, 1);
-            goalMesh.position.set(mazeSize.w - 2, 0, mazeSize.h - 2);
-            scene.add(goalMesh);
+            // Exit Goal
+            goal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 5, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.5 }));
+            goal.position.set(maze.width - 2, 0, maze.height - 2);
+            scene.add(goal);
 
-            const monsterTex = new THREE.TextureLoader().load(ASSETS.monster);
-            const monsterMat = new THREE.SpriteMaterial({ map: monsterTex, transparent: true });
-            const monsterCount = Math.floor(curChapter / 2) + 2;
-            for(let i=0; i<monsterCount; i++) {
+            // Monsters
+            const count = 3 + Math.floor(chap/2);
+            for(let i=0; i<count; i++) {
                 let mx, my;
-                do {
-                    mx = Math.floor(Math.random() * mazeSize.w);
-                    my = Math.floor(Math.random() * mazeSize.h);
-                } while (mazeData[my][mx] === 1 || (mx < 3 && my < 3));
-                const s = new THREE.Sprite(monsterMat);
-                s.position.set(mx, -0.2, my);
-                s.scale.set(0.9, 0.9, 1);
-                scene.add(s);
-                monsterSprites.push(s);
+                do { mx = Math.floor(Math.random()*maze.width); my = Math.floor(Math.random()*maze.height); }
+                while (maze.data[my][mx] !== 0 || (mx < 5 && my < 5));
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.font = '200px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('👺', 128, 128);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
+                sprite.position.set(mx, -0.5, my);
+                sprite.scale.set(1.5, 1.5, 1);
+                scene.add(sprite);
+                monsters.push({ mesh: sprite, origin: new THREE.Vector3(mx, -0.5, my), target: new THREE.Vector3(mx, -0.5, my), speed: 1 + Math.random() });
             }
 
-            document.getElementById('hud-info').innerText = `BAB ${curChapter} - LV ${curLevel}`;
+            document.getElementById('hud-lvl').innerText = `BAB ${chap}`;
             startTimer();
-            setupAudioLoops();
             animate();
         }
 
         function startTimer() {
-            levelTimer = 0;
-            clearInterval(timerInt);
-            timerInt = setInterval(() => {
+            timer = 0;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
                 if(gameState === 'PLAYING') {
-                    levelTimer++;
-                    let m = Math.floor(levelTimer/60).toString().padStart(2,'0');
-                    let s = (levelTimer%60).toString().padStart(2,'0');
+                    timer++;
+                    const m = Math.floor(timer/60).toString().padStart(2,'0');
+                    const s = (timer%60).toString().padStart(2,'0');
                     document.getElementById('hud-timer').innerText = `${m}:${s}`;
-                    if(Math.random() < 0.005) triggerJumpscare();
                 }
             }, 1000);
         }
 
         function triggerJumpscare() {
             if(gameState !== 'PLAYING') return;
-            playScream();
-            const overlay = document.getElementById('jumpscare-overlay');
-            document.getElementById('jumpscare-img').src = ASSETS.monster;
-            overlay.classList.add('jumpscare-active');
-            setTimeout(() => overlay.classList.remove('jumpscare-active'), 1200);
-        }
-
-        function setupAudioLoops() {
-            clearInterval(heartbeatInt); clearInterval(footstepInt);
-            heartbeatInt = setInterval(playHeartbeat, 1200);
-            footstepInt = setInterval(playFootstep, 450);
-        }
-
-        function setupInput() {
-            window.addEventListener('keydown', e => {
-                if(e.key === 'Tab') {
-                    e.preventDefault();
-                    if(gameState === 'PLAYING') pauseGame();
-                    else if(gameState === 'PAUSED') resumeGame();
-                }
-                if(e.key === 'w' || e.key === 'ArrowUp') moveState.forward = true;
-                if(e.key === 's' || e.key === 'ArrowDown') moveState.backward = true;
-                if(e.key === 'a' || e.key === 'ArrowLeft') moveState.left = true;
-                if(e.key === 'd' || e.key === 'ArrowRight') moveState.right = true;
-            });
-            window.addEventListener('keyup', e => {
-                if(e.key === 'w' || e.key === 'ArrowUp') moveState.forward = false;
-                if(e.key === 's' || e.key === 'ArrowDown') moveState.backward = false;
-                if(e.key === 'a' || e.key === 'ArrowLeft') moveState.left = false;
-                if(e.key === 'd' || e.key === 'ArrowRight') moveState.right = false;
-            });
-
-            // Universal Look Control
-            let isDragging = false;
-            let lastX = 0, lastY = 0;
-
-            const handleStart = (x, y) => {
-                isDragging = true;
-                lastX = x; lastY = y;
-            };
-
-            const handleMove = (x, y) => {
-                if (!isDragging || gameState !== 'PLAYING') return;
-                const dx = x - lastX;
-                const dy = y - lastY;
-                yaw -= dx * 0.005;
-                pitch -= dy * 0.005;
-                pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
-                lastX = x; lastY = y;
-            };
-
-            window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
-            window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-            window.addEventListener('mouseup', () => isDragging = false);
-
-            // Mobile Joystick & Look
-            joyContainer.addEventListener('touchstart', e => {
-                joystick.active = true;
-                const rect = joyContainer.getBoundingClientRect();
-                joystick.startX = rect.left + rect.width / 2;
-                joystick.startY = rect.top + rect.height / 2;
-                e.stopPropagation();
-            }, {passive: false});
-
-            window.addEventListener('touchstart', e => {
-                if (e.target !== joyContainer && e.target !== joyKnob) {
-                    handleStart(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            }, {passive: false});
-
-            window.addEventListener('touchmove', e => {
-                if(gameState !== 'PLAYING') return;
-                const touch = e.touches[0];
-                
-                if (joystick.active && (e.target === joyContainer || e.target === joyKnob)) {
-                    let dx = touch.clientX - joystick.startX;
-                    let dy = touch.clientY - joystick.startY;
-                    const max = 50;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist > max) { dx *= max/dist; dy *= max/dist; }
-                    joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-                    moveState.forward = dy < -15; moveState.backward = dy > 15;
-                    moveState.left = dx < -15; moveState.right = dx > 15;
-                    e.preventDefault();
-                } else {
-                    handleMove(touch.clientX, touch.clientY);
-                }
-            }, {passive: false});
-
-            window.addEventListener('touchend', () => {
-                isDragging = false;
-                joystick.active = false;
-                joyKnob.style.transform = 'translate(-50%, -50%)';
-                moveState.forward = moveState.backward = moveState.left = moveState.right = false;
-            });
-        }
-
-        function pauseGame() {
-            gameState = 'PAUSED';
-            document.getElementById('pause-screen').classList.remove('hidden');
-        }
-
-        function resumeGame() {
-            gameState = 'PLAYING';
-            document.getElementById('pause-screen').classList.add('hidden');
-            animate();
-        }
-
-        function restartLevel() {
-            initLevel(curLevel);
-            document.getElementById('pause-screen').classList.add('hidden');
-        }
-
-        function checkCollision(nx, nz) {
-            const gx = Math.round(nx), gz = Math.round(nz);
-            if(gx < 0 || gx >= mazeSize.w || gz < 0 || gz >= mazeSize.h) return true;
-            return mazeData[gz][gx] === 1;
+            gameState = 'JUMPSCARE';
+            document.getElementById('jumpscare-overlay').classList.add('jumpscare-active');
+            playScream(100);
+            setTimeout(() => {
+                document.getElementById('jumpscare-overlay').classList.remove('jumpscare-active');
+                camera.position.set(1, 0, 1);
+                gameState = 'PLAYING';
+                animate();
+            }, 2000);
         }
 
         function animate() {
             if(gameState !== 'PLAYING') return;
             requestAnimationFrame(animate);
-
             const dt = clock.getDelta();
-            const speed = 2.7;
-
+            
             camera.rotation.order = "YXZ";
             camera.rotation.y = yaw;
             camera.rotation.x = pitch;
 
+            const speed = 3.5;
             const dir = new THREE.Vector3();
-            if(moveState.forward) dir.z -= 1;
-            if(moveState.backward) dir.z += 1;
-            if(moveState.left) dir.x -= 1;
-            if(moveState.right) dir.x += 1;
-            
-            if (dir.length() > 0) {
+            if(moveState.f) dir.z -= 1;
+            if(moveState.b) dir.z += 1;
+            if(moveState.l) dir.x -= 1;
+            if(moveState.r) dir.x += 1;
+
+            if(dir.length() > 0) {
                 dir.normalize().applyQuaternion(camera.quaternion);
-                const nextX = camera.position.x + dir.x * speed * dt;
-                const nextZ = camera.position.z + dir.z * speed * dt;
-                if(!checkCollision(nextX, camera.position.z)) camera.position.x = nextX;
-                if(!checkCollision(camera.position.x, nextZ)) camera.position.z = nextZ;
+                dir.y = 0; 
+                const nx = camera.position.x + dir.x * speed * dt;
+                const nz = camera.position.z + dir.z * speed * dt;
+                if(!checkCollision(nx, camera.position.z)) camera.position.x = nx;
+                if(!checkCollision(camera.position.x, nz)) camera.position.z = nz;
+                camera.position.y = Math.sin(Date.now() * 0.01) * 0.05;
             }
 
             flashlight.position.copy(camera.position);
-            const targetPos = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
-            flashlight.target.position.copy(targetPos);
+            const target = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).add(camera.position);
+            flashlight.target.position.copy(target);
 
-            if(camera.position.distanceTo(goalMesh.position) < 0.6) {
-                gameState = 'WIN';
-                setTimeout(() => {
-                    if(curLevel < 20) initLevel(curLevel + 1);
-                    else showChapters();
-                }, 200);
-            }
-
-            monsterSprites.forEach(m => {
-                if(camera.position.distanceTo(m.position) < 0.55) {
-                    triggerJumpscare();
-                    camera.position.set(1, 0, 1);
+            monsters.forEach(m => {
+                if(m.mesh.position.distanceTo(m.target) < 0.2) {
+                    m.target.set(m.origin.x + (Math.random()-0.5)*6, -0.5, m.origin.z + (Math.random()-0.5)*6);
                 }
-                m.position.y = -0.2 + Math.sin(Date.now() * 0.005) * 0.1;
+                const mDir = new THREE.Vector3().subVectors(m.target, m.mesh.position).normalize();
+                m.mesh.position.add(mDir.multiplyScalar(m.speed * dt));
+                if(camera.position.distanceTo(m.mesh.position) < 0.8) triggerJumpscare();
             });
 
+            if(camera.position.distanceTo(goal.position) < 1) winLevel();
             renderer.render(scene, camera);
         }
 
-        window.onload = () => {
-            if('ontouchstart' in window) setDevice('MOBILE');
-            showMenu();
+        function checkCollision(nx, nz) {
+            const gx = Math.round(nx), gz = Math.round(nz);
+            if(gx < 0 || gx >= maze.width || gz < 0 || gz >= maze.height) return true;
+            return maze.data[gz][gx] === 1;
+        }
+
+        async function winLevel() {
+            gameState = 'WIN';
+            if(curChapter === userProgress.unlockedChapters) {
+                userProgress.unlockedChapters++;
+                await saveData();
+            }
+            alert(`Selamat! Bab ${curChapter} Selesai.`);
+            showChapters();
+        }
+
+        window.showMenu = () => {
+            gameState = 'MENU';
+            document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
+            document.getElementById('menu-screen').classList.remove('hidden');
+            document.getElementById('joystick-base').style.display = 'none';
+            if(renderer) renderer.domElement.style.display = 'none';
         };
+
+        window.showChapters = () => {
+            document.querySelectorAll('#ui-layer > div').forEach(d => d.classList.add('hidden'));
+            document.getElementById('chapter-screen').classList.remove('hidden');
+            const list = document.getElementById('chapter-list');
+            list.innerHTML = '';
+            for(let i=1; i<=30; i++) {
+                const isLocked = i > userProgress.unlockedChapters;
+                const btn = document.createElement('button');
+                btn.className = `p-4 h-20 flex items-center justify-center rounded border transition ${isLocked ? 'opacity-30' : 'hover:bg-red-900/40 border-red-900'}`;
+                btn.disabled = isLocked;
+                btn.innerHTML = `<span class="horror-font text-2xl ${isLocked ? '' : 'text-red-600'}">${i}</span>`;
+                btn.onclick = () => startLevel(i);
+                list.appendChild(btn);
+            }
+        };
+
+        window.pauseGame = () => { gameState = 'PAUSED'; document.getElementById('pause-screen').classList.remove('hidden'); };
+        window.resumeGame = () => { gameState = 'PLAYING'; document.getElementById('pause-screen').classList.add('hidden'); animate(); };
+        window.restartLevel = () => { document.getElementById('pause-screen').classList.add('hidden'); startLevel(curChapter); };
+        window.toggleFullscreen = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
+
+        function setupInput() {
+            window.addEventListener('keydown', e => {
+                const k = e.key.toLowerCase();
+                if(k === 'w') moveState.f = true; if(k === 's') moveState.b = true;
+                if(k === 'a') moveState.l = true; if(k === 'd') moveState.r = true;
+                if(k === 'escape') pauseGame();
+            });
+            window.addEventListener('keyup', e => {
+                const k = e.key.toLowerCase();
+                if(k === 'w') moveState.f = false; if(k === 's') moveState.b = false;
+                if(k === 'a') moveState.l = false; if(k === 'd') moveState.r = false;
+            });
+
+            let isPointer = false;
+            window.addEventListener('mousedown', () => isPointer = true);
+            window.addEventListener('mouseup', () => isPointer = false);
+            window.addEventListener('mousemove', e => {
+                if(!isPointer || gameState !== 'PLAYING') return;
+                yaw -= e.movementX * 0.003; pitch -= e.movementY * 0.003;
+                pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
+            });
+
+            // Mobile Joystick
+            const joyBase = document.getElementById('joystick-base');
+            const joyStick = document.getElementById('joystick-stick');
+            let joyActive = false;
+            joyBase.addEventListener('touchstart', e => { joyActive = true; e.preventDefault(); }, {passive:false});
+            window.addEventListener('touchmove', e => {
+                if(!joyActive || gameState !== 'PLAYING') return;
+                const touch = e.touches[0];
+                const rect = joyBase.getBoundingClientRect();
+                const centerX = rect.left + rect.width/2;
+                const centerY = rect.top + rect.height/2;
+                let dx = touch.clientX - centerX, dy = touch.clientY - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy), max = 60;
+                if(dist > max) { dx *= max/dist; dy *= max/dist; }
+                joyStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                moveState.f = dy < -15; moveState.b = dy > 15; moveState.l = dx < -15; moveState.r = dx > 15;
+            }, {passive:false});
+            window.addEventListener('touchend', () => { joyActive = false; joyStick.style.transform = `translate(-50%, -50%)`; moveState.f = moveState.b = moveState.l = moveState.r = false; });
+            
+            // Touch Look
+            let lastX = 0, lastY = 0;
+            window.addEventListener('touchstart', e => { if(e.target === joyBase || e.target === joyStick) return; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; });
+            window.addEventListener('touchmove', e => { if(joyActive || gameState !== 'PLAYING') return; const tx = e.touches[0].clientX, ty = e.touches[0].clientY; yaw -= (tx - lastX) * 0.006; pitch -= (ty - lastY) * 0.006; pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch)); lastX = tx; lastY = ty; });
+        }
+
+        function onResize() { if(!camera) return; camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+
+        window.onload = initApp;
     </script>
 </body>
 </html>
